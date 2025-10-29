@@ -1,29 +1,26 @@
 using UnityEngine;
-using UnityEngine.VFX;
 
 public class HeadDamage : MonoBehaviour
 {
-    public VisualEffect bloodVFXPrefab; // Префаб эффекта крови через VFX Graph
-    public AudioClip hitSound;          // Звук удара
+    public ParticleSystem bloodParticlePrefab; 
+    public AudioClip hitSound;
     private AudioSource audioSource;
 
     void Start()
     {
-        audioSource = GetComponent<AudioSource>(); // Получаем источник звука
+        audioSource = GetComponent<AudioSource>();
     }
 
-    // Метод получения удара: точка и направление
     public void TakeHit(Vector3 hitPoint, Vector3 hitDirection)
     {
         // Спавн эффекта крови
-        if (bloodVFXPrefab)
+        if (bloodParticlePrefab)
         {
-            VisualEffect vfx = Instantiate(bloodVFXPrefab, hitPoint, Quaternion.LookRotation(hitDirection));
-            vfx.SetVector3("HitDirection", hitDirection); // Передаём направление удара
-            vfx.Play();
+            ParticleSystem ps = Instantiate(bloodParticlePrefab, hitPoint, Quaternion.LookRotation(hitDirection));
+            ps.Play();
         }
 
-        // Воспроизведение звука
+        // Звук удара
         if (hitSound && audioSource)
             audioSource.PlayOneShot(hitSound);
 

@@ -2,47 +2,66 @@ using UnityEngine;
 
 public class WeaponController : MonoBehaviour
 {
-    public Transform weapon;           // Объект оружия
-    public float pullBackDistance = 0.5f; // Насколько оттягивается оружие
-    public float hitRange = 2f;        // Дистанция удара
-    public float hitForce = 10f;       // Сила удара
-    private Vector3 originalPosition;
+    public Transform weapon;
+    public float pullAngle = 45f;     // Угол замаха вверх
+    public float hitAngle = -30f;     // Угол удара ниже исходной
+    public float returnSpeed = 12f;   // Скорость возврата
+    private Quaternion originalRotation;
     private bool isPulling = false;
+    private bool isReturning = false;
 
     void Start()
     {
-        originalPosition = weapon.localPosition; // Сохраняем исходную позицию
+        originalRotation = weapon.localRotation;
     }
 
     void Update()
     {
-        // Начало оттягивания
+        // Замах вверх
         if (Input.GetMouseButtonDown(0))
+        {
             isPulling = true;
+            isReturning = false;
+        }
 
-        // Удар при отпускании
+        // Удар вниз
         if (Input.GetMouseButtonUp(0))
         {
             isPulling = false;
-            weapon.localPosition = originalPosition;
 
-            // Проверка попадания по цели
+            // Мгновенно опускаем меч ниже исходной позиции
+            weapon.localRotation = Quaternion.Euler(hitAngle, 0, 0);
+
+            // Проверка попадания
             RaycastHit hit;
-            if (Physics.Raycast(weapon.position, weapon.forward, out hit, hitRange))
+            if (Physics.Raycast(weapon.position, weapon.forward, out hit, 2f))
             {
                 var damageable = hit.collider.GetComponent<HeadDamage>();
                 if (damageable != null)
                 {
-                    Vector3 direction = weapon.forward * hitForce; // Направление удара
+                    Vector3 direction = weapon.forward * 10f;
                     damageable.TakeHit(hit.point, direction);
                 }
             }
+
+            // Запускаем возврат
+            isReturning = true;
         }
 
-        // Оттягивание оружия назад
+        // Замах вверх (плавно)
         if (isPulling)
         {
-            weapon.localPosition = originalPosition - weapon.forward * pullBackDistance;
+            Quaternion targetRotation = Quaternion.Euler(-pullAngle, 0, 0);
+            weapon.localRotation = Quaternion.Lerp(weapon.localRotation, targetRotation, Time.deltaTime * returnSpeed);
+        }
+
+        // Возврат к исходному положению (плавно)
+        if (isReturning)
+        {
+            weapon.localRotation = Quaternion.Lerp(weapon.localRotation, originalRotation, Time.deltaTime * returnSpeed);
+
+            if (Quaternion.Angle(weapon.localRotation, originalRotation) < 1f)
+                isReturning = false;
         }
     }
 }
